@@ -2,6 +2,7 @@ using System.Text;
 
 using Konscious.Security.Cryptography;
 using Isopoh.Cryptography.Blake2b;
+using System.Security.Cryptography;
 
 // reference: https://github.com/Aedial/novelai-api/blob/main/novelai_api/utils.py
 class NAIHasher
@@ -50,11 +51,15 @@ class NAIHasher
 
     string? preSalt = $"{password[..6]}{username}novelai_data_access_key";
     byte[] preSaltBytes = Encoding.UTF8.GetBytes(preSalt);
-    preSalt = null;
 
     byte[] saltBytes = HashBlake2(preSaltBytes);
     byte[] keyBytes = HashArgon2(saltBytes, passwordBytes);
     string encodedKey = EncodeUrlsafeBase64(keyBytes);
+
+    preSalt = null;
+    CryptographicOperations.ZeroMemory(preSaltBytes);
+    CryptographicOperations.ZeroMemory(saltBytes);
+    CryptographicOperations.ZeroMemory(keyBytes);
 
     return encodedKey;
   }
