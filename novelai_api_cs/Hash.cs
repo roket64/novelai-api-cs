@@ -1,10 +1,7 @@
 using System.Text;
-using System.Security;
-using System.Runtime.InteropServices;
 
 using Konscious.Security.Cryptography;
 using Isopoh.Cryptography.Blake2b;
-
 
 // reference: https://github.com/Aedial/novelai-api/blob/main/novelai_api/utils.py
 class NAIHasher
