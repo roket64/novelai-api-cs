@@ -7,11 +7,7 @@ class DotEnvLoader
   {
     Env.Load();
     string? value = Environment.GetEnvironmentVariable(var);
-
-    if (string.IsNullOrEmpty(value))
-    {
-      return "";
-    }
+    ArgumentException.ThrowIfNullOrEmpty(value);
 
     return value;
   }
@@ -20,14 +16,10 @@ class DotEnvLoader
   {
     Env.Load();
     string? secretValue = Environment.GetEnvironmentVariable(var);
+    ArgumentException.ThrowIfNullOrEmpty(secretValue);
 
-    if (string.IsNullOrEmpty(secretValue))
-    {
-      return new();
-    }
+    SecureString secret = SecretHandler.ConvertToSecureString(secretValue);
 
-    SecureString secureSecret = new();
-
-    return new();
+    return secret;
   }
 }
