@@ -32,7 +32,7 @@ class NAIHasher
     return hashedBytes;
   }
 
-  private static string EncodeBase64(byte[] data)
+  private static string EncodeUrlsafeBase64(byte[] data)
   {
     // using url-safe base64 encoding
     // TODO: trimming '=' at the end may cause some problem
@@ -54,7 +54,7 @@ class NAIHasher
 
     byte[] saltBytes = HashBlake2(preSaltBytes);
     byte[] keyBytes = HashArgon2(saltBytes, passwordBytes);
-    string encodedKey = EncodeBase64(keyBytes);
+    string encodedKey = EncodeUrlsafeBase64(keyBytes);
 
     return encodedKey;
   }
