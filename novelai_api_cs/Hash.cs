@@ -119,8 +119,9 @@ class NAIHasher
   {
     byte[] passwordBytes = Encoding.UTF8.GetBytes(password);
 
-    string preSalt = $"{password[..6]}{username}novelai_data_access_key";
+    string? preSalt = $"{password[..6]}{username}novelai_data_access_key";
     byte[] preSaltBytes = Encoding.UTF8.GetBytes(preSalt);
+    preSalt = null;
 
     byte[] saltBytes = HashBlake2(preSaltBytes);
     byte[] keyBytes = HashArgon2(saltBytes, passwordBytes);
