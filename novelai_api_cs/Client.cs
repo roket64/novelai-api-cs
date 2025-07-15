@@ -26,7 +26,7 @@ class NAIClient
 
   private static async Task<string> FetchBearerToken(HttpClient client, string key)
   {
-    string uriString = "https://api.novelai.net/user/login";
+    var uriString = "https://api.novelai.net/user/login";
     var requestUri = new Uri(uriString);
 
     var jsonContent = new StringContent(
@@ -59,10 +59,10 @@ class NAIClient
       Content = jsonContent,
     };
 
-    HttpResponseMessage response = await client.SendAsync(request);
+    var response = await client.SendAsync(request);
     response.EnsureSuccessStatusCode();
 
-    string responseBody = await response.Content.ReadAsStringAsync();
+    var responseBody = await response.Content.ReadAsStringAsync();
 
     var naiToken = JsonSerializer.Deserialize<NAIToken>(responseBody);
     var token = naiToken?.AccessToken;
@@ -76,10 +76,10 @@ class NAIClient
   {
     var httpClient = new HttpClient();
 
-    string username = DotEnvLoader.Load("USERNAME");
-    string password = DotEnvLoader.Load("PASSWORD");
+    var username = DotEnvLoader.Load("USERNAME");
+    var password = DotEnvLoader.Load("PASSWORD");
 
-    string key = NAIHasher.EncodeKey(username, password);
+    var key = NAIHasher.EncodeKey(username, password);
 
     var token = await FetchBearerToken(httpClient, key);
 
