@@ -105,35 +105,14 @@ class NAIHasher
 
   private static string EncodeBase64(byte[] data)
   {
-    string encodedString = Convert.ToBase64String(data)[..64];
-    SecureString secure = new();
-
-    foreach (char ch in encodedString)
-    {
-      secure.AppendChar(ch);
-    }
+    // using url-safe base64 encoding
+    // TODO: trimming '=' at the end may cause some problem
+    string encodedString = Convert.ToBase64String(data)[..64]
+      .TrimEnd('=')
+      .Replace('+', '-')
+      .Replace('/', '_');
 
     return encodedString;
-  }
-
-  public static string EncodeKeyVar()
-  {
-    string username = DotEnvLoader.Load("USERNAME");
-
-    SecureString password = DotEnvLoader.LoadSecret("PASSWORD");
-    string unsecurePassword = SecretHandler.ConvertToString(password);
-
-    byte[] passwordBytes = Encoding.UTF8.GetBytes(unsecurePassword);
-
-    string preSalt = $"{unsecurePassword[..6]}{username}novelai_data_access_key";
-
-    byte[] preSaltBytes = Encoding.UTF8.GetBytes(preSalt);
-
-    byte[] saltBytes = HashBlake2(preSaltBytes);
-    byte[] keyBytes = HashArgon2(saltBytes, passwordBytes);
-    string encodedKey = EncodeBase64(keyBytes);
-
-    return encodedKey;
   }
 
   public static string EncodeKey(string username, string password)
