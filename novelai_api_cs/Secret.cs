@@ -2,6 +2,45 @@ using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.Cryptography;
 
+class SecretHandler
+{
+  private SecretHandler() { }
+
+  public static SecureString ConvertToSecureString(string value)
+  {
+    ArgumentException.ThrowIfNullOrEmpty(value);
+
+    SecureString secure = new();
+
+    foreach (char ch in value)
+    {
+      secure.AppendChar(ch);
+    }
+
+    secure.MakeReadOnly();
+
+    return secure;
+  }
+
+  public static string ConvertToString(SecureString value)
+  {
+    IntPtr ptr = IntPtr.Zero;
+
+    try
+    {
+      ptr = Marshal.SecureStringToBSTR(value);
+      return Marshal.PtrToStringBSTR(ptr);
+    }
+    finally
+    {
+      if (ptr != IntPtr.Zero)
+      {
+        Marshal.ZeroFreeBSTR(ptr);
+      }
+    }
+  }
+}
+
 public class SecretArray : IDisposable
 {
   private byte[] _data;
@@ -35,6 +74,8 @@ public class SecretArray : IDisposable
         return;
       case PassType.Pattern:
         return;
+      default:
+        throw new NotImplementedException();
     }
   }
 
@@ -69,7 +110,7 @@ public class SecretArray : IDisposable
 
   public void Dispose()
   {
-    throw new NotImplementedException();
+    throw new NotImplementedException("not yet implemented");
   }
 
   public byte[] ConvertToBytes()
