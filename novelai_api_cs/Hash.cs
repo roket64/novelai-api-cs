@@ -1,94 +1,24 @@
 using System.Text;
-
+using System.Runtime.InteropServices;
 using Konscious.Security.Cryptography;
 using Isopoh.Cryptography.Blake2b;
-using System.Security;
-using DotNetEnv;
-using System.Runtime.InteropServices;
-
-class DotEnvLoader
-{
-  public static string Load(string var)
-  {
-    Env.Load();
-    string? value = Environment.GetEnvironmentVariable(var);
-
-    if (string.IsNullOrEmpty(value))
-    {
-      return "";
-    }
-
-    return value;
-  }
-
-  public static SecureString LoadSecret(string var)
-  {
-    Env.Load();
-    string? secretValue = Environment.GetEnvironmentVariable(var);
-
-    if (string.IsNullOrEmpty(secretValue))
-    {
-      return new();
-    }
-
-    SecureString secureSecret = new();
-
-    return new();
-  }
-}
-
-class SecretHandler
-{
-  public static SecureString ConvertToSecureString(string value)
-  {
-    ArgumentException.ThrowIfNullOrEmpty(value);
-
-    SecureString secure = new();
-
-    foreach (char ch in value)
-    {
-      secure.AppendChar(ch);
-    }
-
-    secure.MakeReadOnly();
-
-    return secure;
-  }
-
-  public static string ConvertToString(SecureString value)
-  {
-    IntPtr ptr = IntPtr.Zero;
-
-    try
-    {
-      ptr = Marshal.SecureStringToBSTR(value);
-      return Marshal.PtrToStringBSTR(ptr);
-    }
-    finally
-    {
-      if (ptr != IntPtr.Zero)
-      {
-        Marshal.ZeroFreeBSTR(ptr);
-      }
-    }
-  }
-}
+using System.Security.Cryptography;
 
 // reference: https://github.com/Aedial/novelai-api/blob/main/novelai_api/utils.py
 class NAIHasher
 {
-  private static byte[] HashBlake2(byte[] data)
+  private static byte[] HashBlake2b(byte[] data)
   {
-    byte[] hashedBytes = Blake2B.ComputeHash(
+    byte[] result = Blake2B.ComputeHash(
       data,
       new Blake2BConfig() { OutputSizeInBytes = 16 },
       default
     );
 
-    return hashedBytes;
+    return result;
   }
 
-  private static byte[] HashArgon2(byte[] salt, byte[] data)
+  private static byte[] HashArgon2(byte[] data, byte[] salt)
   {
     Argon2id argon2 = new(data)
     {
@@ -98,55 +28,69 @@ class NAIHasher
       DegreeOfParallelism = 1
     };
 
-    byte[] hashedBytes = argon2.GetBytes(64);
+    byte[] result = argon2.GetBytes(64);
 
-    return hashedBytes;
+    return result;
   }
 
-  private static string EncodeBase64(byte[] data)
+  private static byte[] BuildPreSaltBytes(char[] username, char[] password)
   {
-    string encodedString = Convert.ToBase64String(data)[..64];
-    SecureString secure = new();
+    char[] suffix = "novelai_data_access_key".ToCharArray();
+    char[] full = [.. password[..6], .. username, .. suffix];
 
-    foreach (char ch in encodedString)
+    try
     {
-      secure.AppendChar(ch);
+      byte[] result = Encoding.UTF8.GetBytes(full);
+      return result;
     }
-
-    return encodedString;
+    finally
+    {
+      CryptographicOperations.ZeroMemory(MemoryMarshal.AsBytes(full.AsSpan()));
+    }
   }
 
-  public static string EncodeKeyVar()
+  private static string EncodeBase64Url(byte[] bytes)
   {
-    string username = DotEnvLoader.Load("USERNAME");
+    var result = Convert.ToBase64String(bytes)[..64]
+      .TrimEnd('=')
+      .Replace('+', '-')
+      .Replace('/', '_');
 
-    SecureString password = DotEnvLoader.LoadSecret("PASSWORD");
-    string unsecurePassword = SecretHandler.ConvertToString(password);
-
-    byte[] passwordBytes = Encoding.UTF8.GetBytes(unsecurePassword);
-
-    string preSalt = $"{unsecurePassword[..6]}{username}novelai_data_access_key";
-
-    byte[] preSaltBytes = Encoding.UTF8.GetBytes(preSalt);
-
-    byte[] saltBytes = HashBlake2(preSaltBytes);
-    byte[] keyBytes = HashArgon2(saltBytes, passwordBytes);
-    string encodedKey = EncodeBase64(keyBytes);
-
-    return encodedKey;
+    return result;
   }
 
-  public static string EncodeKey(string username, string password)
+  public static string EncodeKey(char[] username, char[] password)
   {
     byte[] passwordBytes = Encoding.UTF8.GetBytes(password);
+    // prevent passwordBytes from being moved by GC
+    GCHandle handle = GCHandle.Alloc(passwordBytes, GCHandleType.Pinned);
 
-    string preSalt = $"{password[..6]}{username}novelai_data_access_key";
-    byte[] preSaltBytes = Encoding.UTF8.GetBytes(preSalt);
+    byte[] preSaltBytes = BuildPreSaltBytes(username, password);
+    byte[]? saltBytes = null;
+    byte[]? keyBytes = null;
 
-    byte[] saltBytes = HashBlake2(preSaltBytes);
-    byte[] keyBytes = HashArgon2(saltBytes, passwordBytes);
-    string encodedKey = EncodeBase64(keyBytes);
+    try
+    {
+      saltBytes = HashBlake2b(preSaltBytes);
+      keyBytes = HashArgon2(passwordBytes, saltBytes);
 
-    return encodedKey;
+      var result = EncodeBase64Url(keyBytes);
+      return result;
+    }
+    finally
+    {
+      CryptographicOperations.ZeroMemory(passwordBytes);
+      CryptographicOperations.ZeroMemory(preSaltBytes);
+      handle.Free();
+
+      if (saltBytes != null)
+      {
+        CryptographicOperations.ZeroMemory(saltBytes);
+      }
+      if (keyBytes != null)
+      {
+        CryptographicOperations.ZeroMemory(keyBytes);
+      }
+    }
   }
 }
