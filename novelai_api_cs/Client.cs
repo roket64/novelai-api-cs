@@ -1,7 +1,8 @@
 using System.Net;
 using System.Net.Http.Headers;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text;
-
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -16,23 +17,22 @@ class NAIClient
   private readonly HttpClient _httpClient;
   public readonly string BearerToken;
 
-  private NAIClient(string token, HttpClient httpClient)
+  private NAIClient(string token)
   {
+    var httpClient = new HttpClient();
+
     BearerToken = token;
     _httpClient = httpClient;
     _httpClient.DefaultRequestHeaders.Authorization =
       new AuthenticationHeaderValue("Bearer", BearerToken);
   }
 
-  private static async Task<string> FetchBearerToken(HttpClient client, string key)
+  private static HttpRequestMessage BuildNAIRequest(byte[] key)
   {
-    var uriString = "https://api.novelai.net/user/login";
-    var requestUri = new Uri(uriString);
-
     var jsonContent = new StringContent(
       JsonSerializer.Serialize(new
       {
-        key = key,
+        key,
       }),
       Encoding.UTF8,
       "application/json"
@@ -41,7 +41,7 @@ class NAIClient
     var request = new HttpRequestMessage()
     {
       Method = HttpMethod.Post,
-      RequestUri = requestUri,
+      RequestUri = new Uri("https://api.novelai.net/user/login"),
       Headers = {
           {
             HttpRequestHeader.ContentType.ToString(),
@@ -59,9 +59,13 @@ class NAIClient
       Content = jsonContent,
     };
 
-    var response = await client.SendAsync(request);
-    response.EnsureSuccessStatusCode();
+    return request;
+  }
 
+  private static async Task<string> FetchBearerToken(byte[] key)
+  {
+    var request = BuildNAIRequest(key);
+    var response = await RequestHandler.Send(request);
     var responseBody = await response.Content.ReadAsStringAsync();
 
     var naiToken = JsonSerializer.Deserialize<NAIToken>(responseBody);
@@ -74,17 +78,21 @@ class NAIClient
 
   public static async Task<NAIClient> New()
   {
-    var httpClient = new HttpClient();
-
     var username = DotEnvLoader.Load("USERNAME").ToCharArray();
     var password = DotEnvLoader.Load("PASSWORD").ToCharArray();
 
     var key = NAIHasher.EncodeKey(username, password);
 
-    var token = await FetchBearerToken(httpClient, key);
-
-    var naiClient = new NAIClient(token, httpClient);
-
-    return naiClient;
+    try
+    {
+      var bearerToken = await FetchBearerToken(key);
+      var naiClient = new NAIClient(bearerToken);
+      return naiClient;
+    }
+    finally
+    {
+      CryptographicOperations.ZeroMemory(MemoryMarshal.AsBytes(password.AsSpan()));
+      CryptographicOperations.ZeroMemory(key);
+    }
   }
 }
