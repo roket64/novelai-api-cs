@@ -27,8 +27,11 @@ class NAIClient
       new AuthenticationHeaderValue("Bearer", BearerToken);
   }
 
-  private static HttpRequestMessage BuildNAIRequest(byte[] key)
+  private static HttpRequestMessage BuildNAIRequest(string key)
   {
+    var endpoint = "https://api.novelai.net/user/login";
+    var loginUri = new Uri(endpoint);
+
     var jsonContent = new StringContent(
       JsonSerializer.Serialize(new
       {
@@ -41,7 +44,7 @@ class NAIClient
     var request = new HttpRequestMessage()
     {
       Method = HttpMethod.Post,
-      RequestUri = new Uri("https://api.novelai.net/user/login"),
+      RequestUri = loginUri,
       Headers = {
           {
             HttpRequestHeader.ContentType.ToString(),
@@ -62,7 +65,7 @@ class NAIClient
     return request;
   }
 
-  private static async Task<string> FetchBearerToken(byte[] key)
+  private static async Task<string> FetchBearerToken(string key)
   {
     var request = BuildNAIRequest(key);
     var response = await RequestHandler.Send(request);
@@ -78,8 +81,8 @@ class NAIClient
 
   public static async Task<NAIClient> New()
   {
-    var username = DotEnvLoader.Load("USERNAME").ToCharArray();
-    var password = DotEnvLoader.Load("PASSWORD").ToCharArray();
+    var username = EnvLoader.Load("USERNAME").ToCharArray();
+    var password = EnvLoader.Load("PASSWORD").ToCharArray();
 
     var key = NAIHasher.EncodeKey(username, password);
 
@@ -92,7 +95,6 @@ class NAIClient
     finally
     {
       CryptographicOperations.ZeroMemory(MemoryMarshal.AsBytes(password.AsSpan()));
-      CryptographicOperations.ZeroMemory(key);
     }
   }
 }

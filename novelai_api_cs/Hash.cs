@@ -49,17 +49,17 @@ class NAIHasher
     }
   }
 
-  private static byte[] EncodeBase64Url(byte[] bytes)
+  private static string EncodeBase64Url(byte[] bytes)
   {
     var result = Convert.ToBase64String(bytes)[..64]
-      .Trim('=')
+      .TrimEnd('=')
       .Replace('+', '-')
       .Replace('/', '_');
 
-    return Encoding.UTF8.GetBytes(result);
+    return result;
   }
 
-  public static byte[] EncodeKey(char[] username, char[] password)
+  public static string EncodeKey(char[] username, char[] password)
   {
     byte[] passwordBytes = Encoding.UTF8.GetBytes(password);
     // prevent passwordBytes from being moved by GC
@@ -72,7 +72,7 @@ class NAIHasher
     try
     {
       saltBytes = HashBlake2b(preSaltBytes);
-      keyBytes = HashArgon2(saltBytes, passwordBytes);
+      keyBytes = HashArgon2(passwordBytes, saltBytes);
 
       var result = EncodeBase64Url(keyBytes);
       return result;
