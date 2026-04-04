@@ -56,7 +56,7 @@ class NAIHasher
 
   private static string EncodeBase64Url(byte[] bytes)
   {
-    string result = Convert.ToBase64String(bytes)[..64]
+    var result = Convert.ToBase64String(bytes)[..64]
       .Trim('=')
       .Replace('+', '-')
       .Replace('/', '_');
