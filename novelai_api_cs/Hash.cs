@@ -1,17 +1,12 @@
 using System.Text;
-using System.Security.Cryptography;
 using System.Runtime.InteropServices;
 using Konscious.Security.Cryptography;
 using Isopoh.Cryptography.Blake2b;
+using System.Security.Cryptography;
 
 // reference: https://github.com/Aedial/novelai-api/blob/main/novelai_api/utils.py
 class NAIHasher
 {
-  public static void Zeroize(Span<byte> buffer)
-  {
-    CryptographicOperations.ZeroMemory(buffer);
-  }
-
   private static byte[] HashBlake2b(byte[] data)
   {
     byte[] result = Blake2B.ComputeHash(
@@ -50,23 +45,24 @@ class NAIHasher
     }
     finally
     {
-      Zeroize(MemoryMarshal.AsBytes(full.AsSpan()));
+      CryptographicOperations.ZeroMemory(MemoryMarshal.AsBytes(full.AsSpan()));
     }
   }
 
-  private static string EncodeBase64Url(byte[] bytes)
+  private static byte[] EncodeBase64Url(byte[] bytes)
   {
     var result = Convert.ToBase64String(bytes)[..64]
       .Trim('=')
       .Replace('+', '-')
       .Replace('/', '_');
 
-    return result;
+    return Encoding.UTF8.GetBytes(result);
   }
 
-  public static string EncodeKey(char[] username, char[] password)
+  public static byte[] EncodeKey(char[] username, char[] password)
   {
     byte[] passwordBytes = Encoding.UTF8.GetBytes(password);
+    // prevent passwordBytes from being moved by GC
     GCHandle handle = GCHandle.Alloc(passwordBytes, GCHandleType.Pinned);
 
     byte[] preSaltBytes = BuildPreSaltBytes(username, password);
@@ -78,22 +74,22 @@ class NAIHasher
       saltBytes = HashBlake2b(preSaltBytes);
       keyBytes = HashArgon2(saltBytes, passwordBytes);
 
-      string result = EncodeBase64Url(keyBytes);
+      var result = EncodeBase64Url(keyBytes);
       return result;
     }
     finally
     {
-      Zeroize(passwordBytes);
-      Zeroize(preSaltBytes);
+      CryptographicOperations.ZeroMemory(passwordBytes);
+      CryptographicOperations.ZeroMemory(preSaltBytes);
       handle.Free();
 
       if (saltBytes != null)
       {
-        Zeroize(preSaltBytes);
+        CryptographicOperations.ZeroMemory(saltBytes);
       }
       if (keyBytes != null)
       {
-        Zeroize(keyBytes);
+        CryptographicOperations.ZeroMemory(keyBytes);
       }
     }
   }
