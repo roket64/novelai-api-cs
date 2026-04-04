@@ -76,8 +76,8 @@ class NAIClient
   {
     var httpClient = new HttpClient();
 
-    var username = DotEnvLoader.Load("USERNAME");
-    var password = DotEnvLoader.Load("PASSWORD");
+    var username = DotEnvLoader.Load("USERNAME").ToCharArray();
+    var password = DotEnvLoader.Load("PASSWORD").ToCharArray();
 
     var key = NAIHasher.EncodeKey(username, password);
 
