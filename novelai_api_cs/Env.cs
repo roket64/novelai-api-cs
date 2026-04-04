@@ -1,8 +1,10 @@
 using System.Security;
 using DotNetEnv;
 
-class DotEnvLoader
+class EnvLoader
 {
+  private EnvLoader() {}
+
   public static string Load(string var)
   {
     Env.Load();
