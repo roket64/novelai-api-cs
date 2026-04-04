@@ -1,5 +1,5 @@
 
-public class RequestHandler
+class RequestHandler
 {
   private RequestHandler() { }
 
