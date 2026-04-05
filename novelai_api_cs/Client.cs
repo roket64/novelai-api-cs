@@ -81,8 +81,8 @@ class NAIClient
 
   public static async Task<NAIClient> New()
   {
-    var username = EnvLoader.Load("USERNAME").ToCharArray();
-    var password = EnvLoader.Load("PASSWORD").ToCharArray();
+    var username = EnvLoader.Load("USERNAME");
+    var password = EnvLoader.Load("PASSWORD");
 
     var key = NAIHasher.EncodeKey(username, password);
 
@@ -94,6 +94,7 @@ class NAIClient
     }
     finally
     {
+      CryptographicOperations.ZeroMemory(MemoryMarshal.AsBytes(username.AsSpan()));
       CryptographicOperations.ZeroMemory(MemoryMarshal.AsBytes(password.AsSpan()));
     }
   }
