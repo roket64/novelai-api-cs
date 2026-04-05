@@ -2,18 +2,37 @@ using System.Text.Json.Serialization;
 
 enum ImageModels
 {
+  // Anime v1 (Deprecated)
+  [JsonPropertyName("nai-diffusion")]
+  Anime = 0,
+  [JsonPropertyName("safe-diffusion")]
+  AnimeCurated = 1,
+
+  // Anime v2 (Deprecated)
+  [JsonPropertyName("nai-diffusion-2")]
+  AnimeV2 = 2,
+
+  // Anime v3
   [JsonPropertyName("nai-diffusion-3")]
-  AnimeV3 = 1,
+  AnimeV3 = 3,
+
+  // Furry
+  [JsonPropertyName("nai-diffusion-furry")]
+  Furry = 4,
   [JsonPropertyName("nai-diffusion-3-furry")]
-  FurryV3 = 2,
+  FurryV3 = 5,
+
+  // Anime v4
   [JsonPropertyName("nai-diffusion-4-curated")]
-  AnimeV4Curated = 3,
+  AnimeV4Curated = 6,
   [JsonPropertyName("nai-diffusion-4-full")]
-  AnimeV4 = 0,
-  [JsonPropertyName("nai-diffusion-45-curated")]
-  AnimeV4_5Curated = 4,
-  [JsonPropertyName("nai-diffusion-45-full")]
-  AnimeV4_5 = 5,
+  AnimeV4 = 7,
+
+  // Anime v4.5
+  [JsonPropertyName("nai-diffusion-4-5-curated")]
+  AnimeV4_5Curated = 8,
+  [JsonPropertyName("nai-diffusion-4-5-full")]
+  AnimeV4_5 = 9,
 }
 
 enum Sampler

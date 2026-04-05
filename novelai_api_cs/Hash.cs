@@ -61,6 +61,7 @@ class NAIHasher
 
   public static string EncodeKey(char[] username, char[] password)
   {
+    // FIXME: there could be temporary copies of password when converting to byte[]
     byte[] passwordBytes = Encoding.UTF8.GetBytes(password);
     // prevent passwordBytes from being moved by GC
     GCHandle handle = GCHandle.Alloc(passwordBytes, GCHandleType.Pinned);
